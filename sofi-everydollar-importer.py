@@ -2,6 +2,7 @@ import os
 import csv
 import time
 import shutil
+import sys
 from datetime import datetime
 
 from selenium import webdriver
@@ -167,5 +168,6 @@ def import_transactions(driver, auto=False):
 
 if __name__ == "__main__":
     show_logo()
+    transactions_file = sys.argv[1]
     print('Launching browser...\n')
     import_automatically()
