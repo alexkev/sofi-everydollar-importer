@@ -6,15 +6,15 @@ import sys
 from datetime import datetime
 
 from selenium import webdriver
-import undetected_chromedriver  as uc
+import undetected_chromedriver as uc
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
+import glob
 
 start_importing = False
-
-transactions_file = 'SOFI-Savings.csv'
 site_link = 'https://www.everydollar.com/app/budget'
 
 selenium_temp_dir = os.path.join(os.getcwd(), 'temp')
@@ -87,87 +87,106 @@ def import_transactions(driver, auto=False):
     expense_selection_xpath = '//input[@name="expense"]'
     income_selection_xpath = '//input[@name="income"]'
     amount_xpath = '//input[@name="amount"]'
-    date_xpath = '//input[@name="date"]'
+    date_xpath = '//input[@id="input-3"]'
     merchant_xpath = '//input[@name="merchant"]'
     more_xpath = '//button[contains(text(), "More Options")]'
     id_xpath = '//input[@name="checkNumber"]'
     note_xpath = '//textarea[@name="note"]'
     submit_button_xpath = '//button[@type="submit"]'
 
-    with open(file=transactions_file, mode='r', encoding='utf-8') as f:
-        reader = csv.reader(f)
-        id = 0
-        for row in reader:
-            id += 1
-            # Skip the first row (header)
-            if row[0] == 'Date':  
-                continue
+    # READ IN ALL .CSV IN ./
+    csv_files = glob.glob('*.csv')
 
-            if row[1] == 'CHASE CREDIT CRD':
-                continue
+    for file in csv_files:
+        # Open the file
+        print('Opening {file}...')
+        with open(file=file, mode='r', encoding='utf-8') as f:
             
-            driver.get(add_transaction_link)
+            reader = csv.reader(f)
+            id = 0
+            for row in reader:
+                id += 1
+                # Skip the first row (header)
+                if row[0] == 'Date':  
+                    continue
 
-            # Wait until the page loads, or for 2min
-            wait = WebDriverWait(driver, timeout=120)
-            wait.until(EC.presence_of_element_located((By.XPATH, income_selection_xpath)))
+                if row[1] == 'CHASE CREDIT CRD':
+                    continue
+                
+                driver.get(add_transaction_link)
 
-            amount = row[3] 
-            date = convert_date_format(row[0])
-            merchant = row[1]
-            note = "Imported from SOFI via Script"
+                # Wait until the page loads, or for 2min
+                wait = WebDriverWait(driver, timeout=120)
+                wait.until(EC.presence_of_element_located((By.XPATH, income_selection_xpath)))
 
-            # if amount is positive, it's income, else it's an expense
-            if float(amount) > 0:
-                element = driver.find_element(By.XPATH, income_selection_xpath)
-                ActionChains(driver).move_to_element(element).click().perform()
-            else:
-                element = driver.find_element(By.XPATH, expense_selection_xpath)
-                ActionChains(driver).move_to_element(element).click().perform()
+                amount = row[3] 
+                date = convert_date_format(row[0])
+                merchant = row[1]
+                note = "Imported from SOFI via Script"
 
-            # Amount
-            element = driver.find_element(By.XPATH, amount_xpath)
-            element.clear()
-            element.send_keys(amount)
-
-            # Date
-            element = driver.find_element(By.XPATH, date_xpath)
-            element.clear()
-            element.send_keys(date)
-
-            # Merchant
-            driver.find_element(By.XPATH, merchant_xpath).send_keys(merchant)
-
-            # Select More Options
-            driver.find_element(By.XPATH, more_xpath).click()
-            wait.until(EC.presence_of_element_located((By.XPATH, id_xpath)))  # (wait until it opens)
-
-            # ID
-            driver.find_element(By.XPATH, id_xpath).send_keys(id)
-
-            # Note
-            driver.find_element(By.XPATH, note_xpath).send_keys(note)
-
-            if not auto:
-                if __name__ == "__main__":
-                    input('To submit this transaction, press ENTER.')
+                # if amount is positive, it's income, else it's an expense
+                if float(amount) > 0:
+                    element = driver.find_element(By.XPATH, income_selection_xpath)
+                    ActionChains(driver).move_to_element(element).click().perform()
                 else:
-                    while last_click_count == current_click_count:
-                        pass  # wait until they click the button
+                    element = driver.find_element(By.XPATH, expense_selection_xpath)
+                    ActionChains(driver).move_to_element(element).click().perform()
 
-                    last_click_count = current_click_count
+                # Amount
+                element = driver.find_element(By.XPATH, amount_xpath)
+                element.clear()
+                element.send_keys(amount)
 
-            else:
-                pass
+                # Date
+                element = driver.find_element(By.XPATH, date_xpath)
+                element.clear()
+                element.send_keys(Keys.COMMAND + "a" + Keys.DELETE)
+                element.send_keys(date)
 
-            print('Submitting...')
+                # Merchant
+                driver.find_element(By.XPATH, merchant_xpath).send_keys(merchant)
 
-            # Submit
-            driver.find_element(By.XPATH, submit_button_xpath).click()
-            time.sleep(5) if auto else time.sleep(3)
+                # Select More Options
+                driver.find_element(By.XPATH, more_xpath).click()
+                wait.until(EC.presence_of_element_located((By.XPATH, id_xpath)))  # (wait until it opens)
+
+                # ID
+                driver.find_element(By.XPATH, id_xpath).send_keys(id)
+
+                # Note
+                driver.find_element(By.XPATH, note_xpath).send_keys(note)
+
+                if not auto:
+                    if __name__ == "__main__":
+                        input('To submit this transaction, press ENTER.')
+                    else:
+                        while last_click_count == current_click_count:
+                            pass  # wait until they click the button
+
+                        last_click_count = current_click_count
+
+                else:
+                    pass
+
+                print('Submitting...')
+
+                # Submit
+                driver.find_element(By.XPATH, submit_button_xpath).click()
+                time.sleep(5) if auto else time.sleep(3)
+
+    # After all transactions are imported, print a message
+    print('\n [ All Transactions Imported! ] ')
+
+    # ask use to delete the spreadsheets we used, yes or no
+    delete_files = input("Would you like to delete the spreadsheets we used? (yes/no): ")
+    if delete_files.lower() == 'yes':
+        for file in csv_files:
+            os.remove(file)
+        print('Files deleted.')
+
+
 
 if __name__ == "__main__":
     show_logo()
-    transactions_file = sys.argv[1]
     print('Launching browser...\n')
     import_automatically()
