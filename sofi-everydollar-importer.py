@@ -13,6 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import glob
+import keys
 
 start_importing = False
 site_link = 'https://www.everydollar.com/app/budget'
@@ -25,12 +26,8 @@ current_click_count = 0
 def import_automatically():
     driver = setup_driver()
     driver.get(site_link)
-    if __name__ == "__main__":
-        input('Sign into EveryDollar, then press ENTER in this window to continue.')
-    else:
-        while not start_importing:
-            pass
-        print('passinggggg')
+    login_to_everydollar(driver=driver)
+    input('Sign into EveryDollar, then press ENTER in this window to continue.')
     print('Preparing to import transactions...')
     import_transactions(driver=driver, auto=True)
     quit_driver(driver=driver)
@@ -64,7 +61,6 @@ def setup_driver(user_agent=None, proxy=None):
     print("Done!")
     return driver
 
-
 def quit_driver(driver):
     try:
         if driver is not None:
@@ -72,6 +68,36 @@ def quit_driver(driver):
             shutil.rmtree(selenium_temp_dir, ignore_errors=True)  # Delete the temporary directory
     except:
         pass
+
+def login_to_everydollar(driver):
+    # XPaths
+    email_xpath = '//input[@name="email"]'
+    password_xpath = '//input[@name="password"]'
+    login_button_xpath = '//button[@type="submit"]'
+
+    # Wait until the page loads, or for 2min
+    wait = WebDriverWait(driver, timeout=120)
+    wait.until(EC.presence_of_element_located((By.XPATH, email_xpath)))
+
+    print('Loading...')
+    time.sleep(2)
+    print('done loading')
+
+    driver.find_element(By.ID, "1-email").click()
+    # 4 | click | id=1-email |  | 
+    driver.find_element(By.ID, "1-email").click()
+    # 5 | type | id=1-email | axel720@gmail.com | 
+    driver.find_element(By.ID, "1-email").send_keys(keys.email)
+    # 6 | click | id=1-password |  | 
+    driver.find_element(By.ID, "1-password").click()
+    # 7 | type | id=1-password | AM!firesave017 | 
+    driver.find_element(By.ID, "1-password").send_keys(keys.password)
+    # 8 | click | id=1-submit |  | 
+    driver.find_element(By.ID, "1-submit").click()
+  
+    # Wait until the page loads, or for 2min
+    wait.until(EC.presence_of_element_located((By.XPATH, '//a[@href="/app/budget"]')))
+
 
 def convert_date_format(date_str):
     date_object = datetime.strptime(date_str, "%Y-%m-%d")
