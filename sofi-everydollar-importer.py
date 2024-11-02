@@ -35,7 +35,7 @@ def import_automatically():
     print("Don't forget to delete the spreadsheets we used, so they don't mess up your import next time.")
 
 def show_logo():
-    print('''
+    print(r'''
            __           ______                      ____        ____          
           / /_____     / ____/   _____  _______  __/ __ \____  / / /___ ______
          / __/ __ \   / __/ | | / / _ \/ ___/ / / / / / / __ \/ / / __ `/ ___/
